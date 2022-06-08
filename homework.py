@@ -109,22 +109,25 @@ def main():
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     previous_time = datetime.now() - timedelta(days=COUNT_PREVIOUS_DAYS)
     current_timestamp = int(previous_time.timestamp())
-    error_message = ''
+    previous_message = ''
 
     while True:
         try:
             response = get_api_answer(current_timestamp)
             homeworks = check_response(response)
             for homework in homeworks:
-                send_message(bot, parse_status(homework))
+                message = parse_status(homework)
+                if previous_message != message:
+                    previous_message = message
+                    send_message(bot, message)
             if len(homeworks) == 0:
                 logger.debug('В ответе нет новых статусов.')
             current_timestamp = response['current_date']
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logger.error(message)
-            if error_message != message[:ERROR_MESSAGE_LENGTH]:
-                error_message = message[:ERROR_MESSAGE_LENGTH]
+            if previous_message != message[:ERROR_MESSAGE_LENGTH]:
+                previous_message = message[:ERROR_MESSAGE_LENGTH]
                 send_message(bot, message)
         time.sleep(RETRY_TIME)
 
