@@ -150,3 +150,7 @@ static/
 posts/static/
 media/
 
+.env
+
+
+

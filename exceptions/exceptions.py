@@ -1,0 +1,2 @@
+class WrongConnectionError(Exception):
+    pass
