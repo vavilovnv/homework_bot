@@ -41,7 +41,7 @@ handler.setFormatter(formatter)
 
 
 def send_message(bot, message):
-    """Отправка сообщения telegram-ботом и логирование статуса отправки"""
+    """Отправка сообщения telegram-ботом и логирование статуса отправки."""
     if bot.send_message(TELEGRAM_CHAT_ID, message):
         logger.info(f'Бот отправил сообщение: {message}')
     else:
@@ -49,7 +49,7 @@ def send_message(bot, message):
 
 
 def get_api_answer(current_timestamp):
-    """Выполнение запроса к сервису и проверка полученного результата"""
+    """Выполнение запроса к сервису и проверка полученного результата."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
@@ -61,11 +61,13 @@ def get_api_answer(current_timestamp):
         if response.status_code == HTTPStatus.OK:
             return response.json()
         else:
-            raise WrongConnectionError(f'Сервер вернул статус {response.status_code}')
+            raise WrongConnectionError(
+                f'Сервер вернул статус {response.status_code}'
+            )
 
 
 def check_response(response):
-    """Проверка структуры данных полученных от сервиса"""
+    """Проверка структуры данных полученных от сервиса."""
     keys, data = ['current_date', 'homeworks'], []
     for key in keys:
         try:
@@ -79,24 +81,25 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """Извлечение данных о статусе домашней работы"""
+    """Извлечение данных о статусе домашней работы."""
     homework_name = homework['homework_name']
     homework_status = homework['status']
     try:
         verdict = HOMEWORK_STATUSES[homework_status]
         return f'Изменился статус проверки работы "{homework_name}". {verdict}'
     except KeyError as error:
-        raise KeyError(f'Получен недокументированный статус домашней работы - {error}')
+        raise KeyError(
+            f'Получен недокументированный статус домашней работы - {error}'
+        )
 
 
 def check_tokens():
-    """Проверка переменных окружения"""
+    """Проверка переменных окружения."""
     return all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID))
 
 
 def main():
     """Основная логика работы бота."""
-
     all_tokens_is_ok = check_tokens()
     if not all_tokens_is_ok:
         message = 'Не заполнены переменные окружения.'
@@ -104,7 +107,8 @@ def main():
         raise SystemExit(message)
 
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    current_timestamp = int((datetime.now() - timedelta(days=COUNT_PREVIOUS_DAYS)).timestamp())
+    previous_time = datetime.now() - timedelta(days=COUNT_PREVIOUS_DAYS)
+    current_timestamp = int(previous_time.timestamp())
     error_message = ''
 
     while True:
