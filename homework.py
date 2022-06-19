@@ -3,12 +3,13 @@ import sys
 import time
 import logging
 import requests
-import telegram
 
+
+from telegram import Bot
 from http import HTTPStatus
 from dotenv import load_dotenv
+from typing import List, Dict, Union
 from datetime import datetime, timedelta
-
 from exceptions.exceptions import WrongConnectionError, BotSendMessageError
 
 load_dotenv()
@@ -32,7 +33,7 @@ VERDICTS = {
 logger = logging.getLogger(__name__)
 
 
-def send_message(bot, message):
+def send_message(bot: Bot, message: str) -> str:
     """Отправка сообщения telegram-ботом и логирование статуса отправки."""
     logger.info('Начало отправки сообщения ботом')
     try:
@@ -46,27 +47,21 @@ def send_message(bot, message):
         logger.info(f'Бот отправил сообщение: {message}')
 
 
-def get_api_answer(current_timestamp):
+def get_api_answer(current_timestamp: int) -> Dict[str, Union[list, int]]:
     """Выполнение запроса к сервису и проверка полученного результата."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
         logger.info('Начато выполнение запроса к API')
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
-    # Переделал except согласно замечанию. Не уверен, что понял его верно.
-    # Если реализация неправильная, прошу уточнить, я доделаю.
     except Exception as error:
         message = f'Недоступен endpoint сервиса {error}'
-        raise ConnectionError(message)
+        raise ConnectionError(message) from error
     else:
         if response.status_code == HTTPStatus.OK:
             logger.info('Запрос к API завершен успешно')
             return response.json()
         else:
-            # Здесь моя попытка обработать ситуации когда запрос в целом
-            # выполнен успешно, но вернул статус отличный от 200, например
-            # 403. Не уверен, что так правильно и что вообще эта проверка
-            # тут нужна и я не переусложнил.
             message = (
                 f'Неверный результат запроса к API: '
                 f'Сервер вернул статус {response.status_code} '
@@ -77,7 +72,7 @@ def get_api_answer(current_timestamp):
             raise WrongConnectionError(message)
 
 
-def check_response(response):
+def check_response(response: dict) -> List[list]:
     """Проверка структуры данных полученных от сервиса."""
     if not isinstance(response, dict):
         raise TypeError('Ответ сервиса не является словарем')
@@ -88,7 +83,7 @@ def check_response(response):
     return response['homeworks']
 
 
-def parse_status(homework):
+def parse_status(homework: list) -> str:
     """Извлечение данных о статусе домашней работы."""
     homework_name = homework['homework_name']
     homework_status = homework['status']
@@ -101,7 +96,7 @@ def parse_status(homework):
         )
 
 
-def check_tokens():
+def check_tokens() -> bool:
     """Проверка переменных окружения."""
     return all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID))
 
@@ -114,10 +109,10 @@ def main():
         logger.critical(message)
         raise sys.exit(message)
 
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
+    bot = Bot(token=TELEGRAM_TOKEN)
     previous_time = datetime.now() - timedelta(days=COUNT_PREVIOUS_DAYS)
     current_timestamp = int(previous_time.timestamp())
-    previous_message = ''
+    previous_messages = {'message': '', 'error': ''}
 
     while True:
         try:
@@ -125,8 +120,8 @@ def main():
             homeworks = check_response(response)
             for homework in homeworks:
                 message = parse_status(homework)
-                if previous_message != message:
-                    previous_message = message
+                if previous_messages['message'] != message:
+                    previous_messages['message'] = message
                     send_message(bot, message)
             if len(homeworks) == 0:
                 logger.debug('В ответе нет новых статусов.')
@@ -134,8 +129,8 @@ def main():
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logger.error(message)
-            if previous_message != message[:ERROR_MESSAGE_LENGTH]:
-                previous_message = message[:ERROR_MESSAGE_LENGTH]
+            if previous_messages['error'] != message[:ERROR_MESSAGE_LENGTH]:
+                previous_messages['error'] = message[:ERROR_MESSAGE_LENGTH]
                 send_message(bot, message)
         time.sleep(RETRY_TIME)
 
