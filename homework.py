@@ -119,7 +119,7 @@ def main():
             response = get_api_answer(current_timestamp)
             homeworks = check_response(response)
             if len(homeworks) > 0:
-                homework = homeworks[-1]
+                homework = sorted(homeworks, key=lambda x: x['id'])[-1]
                 message = parse_status(homework)
                 if previous_messages['message'] != message:
                     previous_messages['message'] = message
