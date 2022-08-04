@@ -118,12 +118,13 @@ def main():
         try:
             response = get_api_answer(current_timestamp)
             homeworks = check_response(response)
-            for homework in homeworks:
+            if len(homeworks) > 0:
+                homework = homeworks[-1]
                 message = parse_status(homework)
                 if previous_messages['message'] != message:
                     previous_messages['message'] = message
                     send_message(bot, message)
-            if len(homeworks) == 0:
+            else:
                 logger.debug('В ответе нет новых статусов.')
             current_timestamp = response['current_date']
         except Exception as error:
