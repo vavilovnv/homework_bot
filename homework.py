@@ -18,7 +18,7 @@ PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-RETRY_TIME = 600
+RETRY_TIME = 10
 COUNT_PREVIOUS_DAYS = 30
 ERROR_MESSAGE_LENGTH = 100
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 def send_message(bot: Bot, message: str) -> str:
     """Отправка сообщения telegram-ботом и логирование статуса отправки."""
+
     logger.info('Начало отправки сообщения ботом')
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
@@ -49,6 +50,7 @@ def send_message(bot: Bot, message: str) -> str:
 
 def get_api_answer(current_timestamp: int) -> Dict[str, Union[list, int]]:
     """Выполнение запроса к сервису и проверка полученного результата."""
+
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
@@ -74,6 +76,7 @@ def get_api_answer(current_timestamp: int) -> Dict[str, Union[list, int]]:
 
 def check_response(response: dict) -> List[list]:
     """Проверка структуры данных полученных от сервиса."""
+
     if not isinstance(response, dict):
         raise TypeError('Ответ сервиса не является словарем')
     if not all(['current_date' in response, 'homeworks' in response]):
@@ -85,6 +88,7 @@ def check_response(response: dict) -> List[list]:
 
 def parse_status(homework: list) -> str:
     """Извлечение данных о статусе домашней работы."""
+
     homework_name = homework['homework_name']
     homework_status = homework['status']
     try:
@@ -98,11 +102,13 @@ def parse_status(homework: list) -> str:
 
 def check_tokens() -> bool:
     """Проверка переменных окружения."""
+
     return all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID))
 
 
 def main():
     """Основная логика работы бота."""
+
     all_tokens_is_ok = check_tokens()
     if not all_tokens_is_ok:
         message = 'Не заполнены переменные окружения.'
